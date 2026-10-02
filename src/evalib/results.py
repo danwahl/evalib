@@ -91,7 +91,7 @@ class Leaderboard:
 
         def key(row: dict[str, Any]) -> tuple:
             v = row["scores"].get(head.key, {}).get("value")
-            return (v is None, sign * v if v is not None else 0, row["name"])
+            return (v is None, sign * _key(v) if v is not None else 0, row["name"])
 
         return sorted(self.rows, key=key)
 
@@ -106,6 +106,7 @@ class Leaderboard:
                 continue
             count += 1
             value = row["scores"].get(head, {}).get("value")
+            value = None if value is None else _key(value)
             if value != last:
                 rank, last = count, value
             out.append((row, rank))
@@ -145,7 +146,7 @@ class Leaderboard:
                 text = fmt(cell["value"], col.format)
                 if interval and col is head and _has_interval(cell):
                     text += f" ({fmt(cell['lo'], col.format)}–{fmt(cell['hi'], col.format)})"
-                if row["kind"] == "model" and cell["value"] == best[col.key]:
+                if row["kind"] == "model" and _key(cell["value"]) == best[col.key]:
                     text = f"**{text}**"
                 cells.append(text)
             lines.append("| " + " | ".join(cells) + " |")
@@ -185,10 +186,15 @@ def _has_interval(cell: dict[str, Any]) -> bool:
     return cell.get("lo") is not None and cell.get("hi") is not None
 
 
+def _key(value: float) -> float:
+    """A score rounded past float noise, for ranking and finding ties."""
+    return round(value, 9)
+
+
 def _best(rows: list[dict[str, Any]], col: Column) -> float | None:
     """The column's best model value, if exactly one model has it."""
     values = [
-        r["scores"][col.key]["value"]
+        _key(r["scores"][col.key]["value"])
         for r in rows
         if r["kind"] == "model" and col.key in r["scores"]
     ]

@@ -109,3 +109,16 @@ def test_provider():
     assert provider("openrouter/x-ai/grok-4") == "x-ai"
     assert provider("anthropic/claude-x") == "anthropic"
     assert provider("model") == ""
+
+
+def test_float_noise_ties():
+    board = Leaderboard("Test", [Column("score", "Score", "lower")])
+    board.add(
+        pd.DataFrame({"score": [(0.1 + 0.2) / 3, 0.3 / 3, 0.2]}, index=["b", "a", "c"])
+    )
+    assert [(r["name"], rank) for r, rank in board.ranks()] == [
+        ("a", 1),
+        ("b", 1),
+        ("c", 3),
+    ]
+    assert "**" not in board.markdown()

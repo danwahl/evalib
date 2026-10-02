@@ -11,7 +11,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 from markdown_it import MarkdownIt
 from markupsafe import Markup
 
-from evalib.results import MARKER, Leaderboard, _has_interval, fmt
+from evalib.results import MARKER, Leaderboard, _has_interval, _key, fmt
 
 # A line made only of badge images, optionally linked, which the site's header
 # replaces. Only lines before the first section heading are checked.
@@ -130,7 +130,10 @@ def _table(board: Leaderboard) -> dict[str, Any]:
             if cell is None:
                 cols.append({"text": "", "sort": ""})
                 continue
-            entry = {"text": fmt(cell["value"], col.format), "sort": cell["value"]}
+            entry: dict[str, Any] = {
+                "text": fmt(cell["value"], col.format),
+                "sort": _key(cell["value"]),
+            }
             if _has_interval(cell):
                 entry["interval"] = (
                     f"{fmt(cell['lo'], col.format)}–{fmt(cell['hi'], col.format)}"

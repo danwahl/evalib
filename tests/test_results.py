@@ -98,7 +98,7 @@ def test_info_columns():
     )
     b.add(pd.DataFrame({"s": [0.5]}, index=["Humans"]), kind="baseline")
     table = b.markdown()
-    assert "| # | name | Provider | S |" in table and "|--:|:--|:--|--:|" in table
+    assert "| # | Name | Provider | S |" in table and "|--:|:--|:--|--:|" in table
     assert "| 1 | gpt | OpenAI | **1.00** |" in table
     assert "|  | _Humans_ |  | 0.50 |" in table
 

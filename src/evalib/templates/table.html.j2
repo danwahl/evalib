@@ -16,8 +16,8 @@
           <th data-sort="info-{{ loop.index0 }}"><button type="button">{{ label }}</button></th>
           {% endfor %}
           {% for col in board.columns %}
-          <th class="num" data-sort="{{ loop.index0 }}" data-better="{{ col.better }}"{% if col.description %} title="{{ col.description }}"{% endif %}>
-            <button type="button">{{ col.label }}<span class="better">{{ "↑" if col.better == "higher" else "↓" }}</span></button>
+          <th class="num" data-sort="{{ loop.index0 }}" data-better="{{ col.better }}" title="{% if col.description %}{{ col.description }}; {% endif %}{{ col.better }} is better">
+            <button type="button">{{ col.label }}</button>
           </th>
           {% if loop.first %}<th class="ci ci-head"><span class="sr-only">95% interval</span><span class="ci-axis" aria-hidden="true">{% for tick in board.ticks %}<span style="left:{{ tick.pos }}%">{{ tick.label }}</span>{% endfor %}</span></th>{% endif %}
           {% endfor %}

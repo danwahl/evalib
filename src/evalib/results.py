@@ -130,7 +130,7 @@ class Leaderboard:
         lines = [
             "| # | "
             + " | ".join(
-                ["name", *self.info.values()] + [c.label for c in self.columns]
+                ["Name", *self.info.values()] + [c.label for c in self.columns]
             )
             + " |",
             "|--:|:--|" + ":--|" * len(self.info) + "--:|" * len(self.columns),

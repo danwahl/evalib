@@ -49,6 +49,20 @@ def test_build_without_marker_or_title(repo):
     assert 'id="leaderboard"' not in html and 'href="#leaderboard"' not in html
 
 
+def test_readme_tables_are_sortable(repo):
+    (repo / "README.md").write_text("| Task | Score |\n|--|--:|\n| a | 1 |\n")
+    html = (build() / "index.html").read_text()
+    assert '<div class="board-scroll"><table class="board-table md-table">' in html
+    assert "</table></div>" in html
+
+
+def test_raw_html_tables_are_left_alone(repo):
+    (repo / "README.md").write_text('<table class="x"><tr><td>1</td></tr></table>\n')
+    html = (build() / "index.html").read_text()
+    assert '<table class="x">' in html and 'class="board-table md-table"' not in html
+    assert "</table></div>" not in html
+
+
 def test_build_rejects_assets_outside_repo(repo):
     with pytest.raises(ValueError):
         build(assets=["../secret"])
@@ -63,11 +77,11 @@ def test_cli(repo, monkeypatch):
 def test_ticks_and_labels():
     from evalib.site import _tick_label, _ticks
 
-    assert _ticks(57.9, 100) == [50, 60, 70, 80, 90, 100]
-    assert _ticks(0.1, 0.3) == [0.1, 0.15, 0.2, 0.25, 0.3]
-    assert _ticks(0.5, 0.5) == [0.45, 0.475, 0.5, 0.525, 0.55]
-    assert _ticks(-3, 2) == [-3, -2, -1, 0, 1, 2]
-    assert [_tick_label(v, "pct") for v in _ticks(0, 0.012)] == [
+    assert _ticks(57.9, 100) == [50, 75, 100]
+    assert _ticks(0.1, 0.3) == [0.1, 0.2, 0.3]
+    assert _ticks(0.5, 0.5) == [0.4, 0.5, 0.6]
+    assert _ticks(-3, 2) == [-5, -2.5, 0, 2.5]
+    assert [_tick_label(v, "pct") for v in _ticks(0, 0.012, target=5)] == [
         "0%",
         "0.25%",
         "0.5%",

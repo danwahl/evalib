@@ -23,6 +23,11 @@ BLOCK = re.compile(rf"<!-- {MARKER}:start -->.*?<!-- {MARKER}:end -->", re.S)
 DEFAULT_ASSETS = ["images"]
 
 md = MarkdownIt("commonmark").enable(["table", "strikethrough"])
+md.add_render_rule(
+    "table_open",
+    lambda *_: '<div class="board-scroll"><table class="board-table md-table">\n',
+)
+md.add_render_rule("table_close", lambda *_: "</table></div>\n")
 
 
 def build(
@@ -38,7 +43,8 @@ def build(
 
     The README supplies the page content and is trusted: its HTML passes
     through unescaped. If it has a leaderboard block and results.json exists,
-    the block becomes a sortable table with confidence intervals.
+    the block becomes a sortable table with confidence intervals. Other Markdown
+    tables in the README get the same styling and sort on their cell values.
     CITATION.cff, if present, adds a BibTeX block. `assets` are files or
     directories the README references, given relative to the working
     directory and copied to the same place under `out`.
@@ -165,7 +171,7 @@ def _table(board: Leaderboard) -> dict[str, Any]:
     }
 
 
-def _ticks(lo: float, hi: float, target: int = 5) -> list[float]:
+def _ticks(lo: float, hi: float, target: int = 2) -> list[float]:
     """Round axis ticks that cover [lo, hi], about `target` intervals apart."""
     if hi <= lo:
         pad = abs(lo) * 0.1 or 1.0

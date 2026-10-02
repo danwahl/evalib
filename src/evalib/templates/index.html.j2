@@ -42,8 +42,7 @@ header.site {
   border-bottom: 1px solid var(--line);
   background: var(--surface);
 }
-.wrap { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
-main .wrap > :is(ul, ol, blockquote, h3), main .wrap > p:not(:has(> img)) { max-width: 760px; }
+.wrap { max-width: 1000px; margin: 0 auto; padding: 0 16px; }
 header.site .wrap {
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 20px;
   padding-top: 28px; padding-bottom: 20px;
@@ -60,15 +59,16 @@ code { background: var(--code); padding: 0.1em 0.3em; border-radius: 4px; }
 pre { background: var(--code); padding: 12px 14px; border-radius: 6px; overflow-x: auto; }
 pre code { background: none; padding: 0; }
 blockquote { margin: 1em 0; padding: 0.2em 1em; border-left: 3px solid var(--accent); color: var(--muted); }
-main > .wrap > table { display: block; overflow-x: auto; }
 table { border-collapse: collapse; font-size: 0.92rem; }
-th, td { padding: 6px 10px; border-bottom: 1px solid var(--line); text-align: left; }
+th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; }
 th { font-weight: 600; }
 
 .board { margin: 1.2em 0 1.6em; }
 .board-controls { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 8px; font-size: 0.9rem; color: var(--muted); }
 .board-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); max-height: 70vh; overflow-y: auto; }
+main .wrap > table { display: block; overflow-x: auto; }
 .board-table { width: 100%; font-variant-numeric: tabular-nums; }
+.board-scroll:has(> .md-table) { width: fit-content; max-width: 100%; margin: 1em 0; }
 .board-table thead th { position: sticky; top: 0; background: var(--surface); z-index: 1; white-space: nowrap; }
 .board-table th button {
   all: unset; cursor: pointer; display: inline-flex; gap: 3px; align-items: baseline;
@@ -84,12 +84,14 @@ th { font-weight: 600; }
 .board-table td.head { font-weight: 600; }
 .board-table tr:hover td { background: var(--accent-soft); }
 .board-table tr.kind-model td.rank { color: var(--muted); }
-.board-table tr:not(.kind-model) td { color: var(--ref); font-style: italic; }
+[data-board] tr:not(.kind-model) td { color: var(--ref); font-style: italic; }
 .board-table tr.hidden { display: none; }
-.ci { width: 34%; min-width: 180px; padding-left: 18px; padding-right: 18px; }
+.ci { width: 34%; min-width: 120px; padding-left: 12px; padding-right: 12px; }
 .ci-head { vertical-align: bottom; }
 .ci-axis { position: relative; display: block; height: 1.2em; font-size: 0.75rem; font-weight: 400; color: var(--muted); }
 .ci-axis span { position: absolute; transform: translateX(-50%); }
+.ci-axis span:first-child { transform: none; }
+.ci-axis span:last-child { transform: translateX(-100%); }
 .ci-track { position: relative; display: block; height: 14px; }
 .ci-grid { position: absolute; top: -7px; bottom: -7px; width: 1px; background: var(--line); }
 .ci-range { position: absolute; top: 6px; height: 2px; background: var(--accent); }
@@ -137,51 +139,91 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85
   </div>
 </footer>
 <script>
+// Clicks cycle a column through its first order, the reverse, and back to
+// the table's original order.
+const sortable = (table, valueOf) => {
+  const body = table.tBodies[0];
+  const heads = [...table.tHead.rows[0].cells].filter((th) => th.querySelector("button"));
+  const initial = heads.map((th) => th.getAttribute("aria-sort"));
+  [...body.rows].forEach((row, i) => { row.dataset.order ??= i; });
+  const arrange = (compare) => body.append(...[...body.rows].sort(compare));
+  const original = (a, b) => a.dataset.order - b.dataset.order;
+
+  const sortBy = (th, dir) => {
+    heads.forEach((h) => h.removeAttribute("aria-sort"));
+    th.setAttribute("aria-sort", dir);
+    const sign = dir === "ascending" ? 1 : -1;
+    arrange((a, b) => {
+      const x = valueOf(a, th), y = valueOf(b, th);
+      if (x === null || y === null) return (x === null) - (y === null) || original(a, b);
+      const order = typeof x === "string" ? x.localeCompare(y, undefined, { numeric: true }) : x - y;
+      return order * sign || original(a, b);
+    });
+  };
+  const reset = () => {
+    heads.forEach((h, i) => (initial[i] ? h.setAttribute("aria-sort", initial[i]) : h.removeAttribute("aria-sort")));
+    arrange(original);
+  };
+
+  heads.forEach((th) => {
+    th.querySelector("button").addEventListener("click", () => {
+      // Score columns open with their best values first, others ascending.
+      const first = th.dataset.better === "higher" ? "descending" : "ascending";
+      const current = th.getAttribute("aria-sort");
+      if (!current) sortBy(th, first);
+      else if (current === first) sortBy(th, first === "ascending" ? "descending" : "ascending");
+      else reset();
+    });
+  });
+};
+
 document.querySelectorAll("[data-board]").forEach((board) => {
   const table = board.querySelector("table");
-  const body = table.tBodies[0];
-  const heads = [...table.tHead.rows[0].cells].filter((th) => th.dataset.sort !== undefined);
-
-  const valueOf = (row, key) => {
+  sortable(table, (row, th) => {
+    const key = th.dataset.sort;
     if (key === "rank") return +row.dataset.order;
-    if (key === "name") return row.dataset.name.toLowerCase();
+    if (key === "name") return row.dataset.name;
     if (key.startsWith("info-")) {
       const text = row.querySelectorAll("td.info")[+key.slice(5)].textContent;
       return text === "" ? null : text;
     }
     const v = row.querySelectorAll("td[data-value]")[+key].dataset.value;
     return v === "" ? null : +v;
-  };
-
-  const sortBy = (th, dir) => {
-    const key = th.dataset.sort;
-    heads.forEach((h) => h.removeAttribute("aria-sort"));
-    th.setAttribute("aria-sort", dir);
-    const sign = dir === "ascending" ? 1 : -1;
-    const rows = [...body.rows].sort((a, b) => {
-      const x = valueOf(a, key), y = valueOf(b, key);
-      if (x === null || y === null) return (x === null) - (y === null);
-      const order = typeof x === "string" ? x.localeCompare(y) : x - y;
-      return order * sign || a.dataset.name.localeCompare(b.dataset.name);
-    });
-    body.append(...rows);
-  };
-
-  // Clicks cycle a column through best first, reversed, and back to the ranking.
-  heads.forEach((th) => {
-    th.querySelector("button").addEventListener("click", () => {
-      const first = th.dataset.better === "higher" ? "descending" : "ascending";
-      const current = th.getAttribute("aria-sort");
-      if (!current) sortBy(th, first);
-      else if (current === first) sortBy(th, first === "ascending" ? "descending" : "ascending");
-      else sortBy(heads[0], "ascending");
-    });
   });
 
   board.querySelectorAll("[data-kind-toggle]").forEach((box) => {
     box.addEventListener("change", () => {
-      body.querySelectorAll(`tr[data-kind="${box.dataset.kindToggle}"]`).forEach((row) => row.classList.toggle("hidden", !box.checked));
+      table.tBodies[0].querySelectorAll(`tr[data-kind="${box.dataset.kindToggle}"]`).forEach((row) => row.classList.toggle("hidden", !box.checked));
     });
+  });
+});
+
+// README tables sort on their cell text, or numerically in columns where
+// every filled cell is a number.
+const EMPTY = ["", "-", "\u2013", "\u2014", "n/a", "na"];
+document.querySelectorAll("table.md-table").forEach((table) => {
+  if (!table.tHead || !table.tBodies[0]) return;
+  const text = (row, th) => {
+    const value = row.cells[th.cellIndex]?.textContent.trim() ?? "";
+    return EMPTY.includes(value.toLowerCase()) ? null : value;
+  };
+  const number = (value) => {
+    const stripped = value.replace(/[$%,*]/g, "");
+    return stripped !== "" && isFinite(stripped) ? +stripped : null;
+  };
+  [...table.tHead.rows[0].cells].forEach((th) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.append(...th.childNodes);
+    th.append(button);
+    const values = [...table.tBodies[0].rows].map((row) => text(row, th)).filter((v) => v !== null);
+    if (!values.length || values.some((v) => number(v) === null)) return;
+    th.dataset.better = "higher";
+    for (const row of table.rows) row.cells[th.cellIndex]?.classList.add("num");
+  });
+  sortable(table, (row, th) => {
+    const value = text(row, th);
+    return value !== null && th.dataset.better ? number(value) : value;
   });
 });
 

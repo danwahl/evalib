@@ -1,0 +1,34 @@
+[project]
+name = "evalib"
+version = "0.1.0"
+description = "Leaderboards, confidence intervals and landing pages for Inspect evals"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Dan Wahl", email = "hi@danwahl.net" }]
+requires-python = ">=3.10"
+dependencies = [
+    "jinja2>=3.1",
+    "markdown-it-py>=3.0",
+    "markupsafe>=2.1",
+    "numpy>=1.26",
+    "pandas>=2.0",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+evalib = "evalib.cli:main"
+
+[dependency-groups]
+dev = ["mypy>=1.0", "pytest>=8.0", "ruff>=0.14", "pandas-stubs", "types-pyyaml"]
+
+[build-system]
+requires = ["uv_build>=0.9.7,<0.10.0"]
+build-backend = "uv_build"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]
+
+[tool.mypy]
+ignore_missing_imports = true

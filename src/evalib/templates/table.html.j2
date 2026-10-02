@@ -1,0 +1,52 @@
+<div class="board" id="leaderboard" data-board>
+  {% if board.kinds %}
+  <div class="board-controls">
+    {% for kind in board.kinds %}
+    <label><input type="checkbox" data-kind-toggle="{{ kind }}" checked> Show {{ kind }} rows</label>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div class="board-scroll">
+    <table class="board-table">
+      <thead>
+        <tr>
+          <th class="num" data-sort="rank" aria-sort="ascending"><button type="button">#</button></th>
+          <th data-sort="name"><button type="button">Name</button></th>
+          {% for label in board.info %}
+          <th data-sort="info-{{ loop.index0 }}"><button type="button">{{ label }}</button></th>
+          {% endfor %}
+          {% for col in board.columns %}
+          <th class="num" data-sort="{{ loop.index0 }}" data-better="{{ col.better }}"{% if col.description %} title="{{ col.description }}"{% endif %}>
+            <button type="button">{{ col.label }}<span class="better">{{ "↑" if col.better == "higher" else "↓" }}</span></button>
+          </th>
+          {% if loop.first %}<th class="ci ci-head"><span class="sr-only">95% interval</span><span class="ci-axis" aria-hidden="true">{% for tick in board.ticks %}<span style="left:{{ tick.pos }}%">{{ tick.label }}</span>{% endfor %}</span></th>{% endif %}
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in board.rows %}
+        <tr class="kind-{{ row.kind }}" data-kind="{{ row.kind }}" data-order="{{ row.order }}" data-name="{{ row.name }}">
+          <td class="num rank">{{ row.rank }}</td>
+          <td class="name">{{ row.name }}</td>
+          {% for text in row.info %}
+          <td class="info">{{ text }}</td>
+          {% endfor %}
+          {% for cell in row.cols %}
+          <td class="num{% if loop.first %} head{% endif %}" data-value="{{ cell.sort }}"{% if cell.interval %} title="95% interval {{ cell.interval }}"{% endif %}>{{ cell.text }}</td>
+          {% if loop.first %}
+          <td class="ci">
+            {% if cell.interval %}<span class="sr-only">95% interval {{ cell.interval }}</span>{% endif %}
+            <span class="ci-track" aria-hidden="true">{% for tick in board.ticks %}<span class="ci-grid" style="left:{{ tick.pos }}%"></span>{% endfor %}{% if cell.interval %}<span class="ci-range" style="left:{{ cell.bar.lo }}%;width:{{ cell.bar.hi - cell.bar.lo }}%"></span>{% endif %}{% if cell.bar %}<span class="ci-point" style="left:{{ cell.bar.value }}%"></span>{% endif %}</span>
+          </td>
+          {% endif %}
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="board-foot">{% if board.intervals %}Lines show 95% bootstrap intervals. {% endif %}Updated {{ board.updated }}. <a href="results.json">Download results.json</a></p>
+  {% for note in board.notes %}
+  <p class="board-note">{{ note }}</p>
+  {% endfor %}
+</div>

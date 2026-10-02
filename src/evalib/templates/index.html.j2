@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }}</title>
+<style>
+:root {
+  --bg: #fbfaf7;
+  --surface: #ffffff;
+  --text: #1d1f21;
+  --muted: #5f6368;
+  --line: #e4e1da;
+  --accent: #2f6f4f;
+  --accent-soft: #d8eadf;
+  --code: #f3f1ec;
+  --ref: #8a6d1d;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141615;
+    --surface: #1b1e1c;
+    --text: #e6e6e3;
+    --muted: #a0a4a0;
+    --line: #2e322f;
+    --accent: #7cc39b;
+    --accent-soft: #24392d;
+    --code: #222623;
+    --ref: #d6b85e;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+a { color: var(--accent); }
+header.site {
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+main .wrap > :is(ul, ol, blockquote, h3), main .wrap > p:not(:has(> img)) { max-width: 760px; }
+header.site .wrap {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 20px;
+  padding-top: 28px; padding-bottom: 20px;
+}
+header.site h1 { margin: 0; font-size: 1.9rem; letter-spacing: -0.01em; }
+header.site nav { display: flex; gap: 16px; margin-left: auto; font-size: 0.95rem; }
+main { padding: 8px 0 48px; }
+main h2 { margin-top: 2.2em; padding-bottom: 0.3em; border-bottom: 1px solid var(--line); font-size: 1.35rem; }
+main h3 { margin-top: 1.6em; font-size: 1.1rem; }
+main img { max-width: 100%; height: auto; }
+main p > a > img { vertical-align: middle; }
+pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.88em; }
+code { background: var(--code); padding: 0.1em 0.3em; border-radius: 4px; }
+pre { background: var(--code); padding: 12px 14px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; padding: 0; }
+blockquote { margin: 1em 0; padding: 0.2em 1em; border-left: 3px solid var(--accent); color: var(--muted); }
+main > .wrap > table { display: block; overflow-x: auto; }
+table { border-collapse: collapse; font-size: 0.92rem; }
+th, td { padding: 6px 10px; border-bottom: 1px solid var(--line); text-align: left; }
+th { font-weight: 600; }
+
+.board { margin: 1.2em 0 1.6em; }
+.board-controls { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 8px; font-size: 0.9rem; color: var(--muted); }
+.board-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); max-height: 70vh; overflow-y: auto; }
+.board-table { width: 100%; font-variant-numeric: tabular-nums; }
+.board-table thead th { position: sticky; top: 0; background: var(--surface); z-index: 1; white-space: nowrap; }
+.board-table th button {
+  all: unset; cursor: pointer; display: inline-flex; gap: 3px; align-items: baseline;
+}
+.board-table th button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.board-table th[aria-sort] button { color: var(--accent); }
+.board-table .better { font-size: 0.75em; color: var(--muted); }
+.board-table .num { text-align: right; }
+.board-table td.name, .board-table td.info { white-space: nowrap; }
+.board-table td.info { color: var(--muted); }
+.board-table td.head { font-weight: 600; }
+.board-table tr:hover td { background: var(--accent-soft); }
+.board-table tr.kind-model td.rank { color: var(--muted); }
+.board-table tr:not(.kind-model) td { color: var(--ref); font-style: italic; }
+.board-table tr.hidden { display: none; }
+.ci { width: 34%; min-width: 260px; padding-left: 18px; padding-right: 18px; }
+.ci-head { vertical-align: bottom; }
+.ci-axis { position: relative; display: block; height: 1.2em; font-size: 0.75rem; font-weight: 400; color: var(--muted); }
+.ci-axis span { position: absolute; transform: translateX(-50%); }
+.ci-track { position: relative; display: block; height: 14px; }
+.ci-grid { position: absolute; top: -7px; bottom: -7px; width: 1px; background: var(--line); }
+.ci-range { position: absolute; top: 6px; height: 2px; background: var(--accent); }
+.ci-point { position: absolute; top: 3px; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: var(--accent); }
+tr:not(.kind-model) .ci-range, tr:not(.kind-model) .ci-point { background: var(--ref); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.board-foot, .board-note { font-size: 0.85rem; color: var(--muted); margin: 6px 0 0; }
+
+.cite { margin-top: 3em; }
+.cite pre { white-space: pre-wrap; word-break: break-word; }
+.cite button {
+  font: inherit; font-size: 0.85rem; padding: 4px 10px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer;
+}
+footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; padding: 20px 0 32px; }
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <h1>{{ title }}</h1>
+    <nav>
+      {% if board %}<a href="#leaderboard">Leaderboard</a>{% endif %}
+      {% if cite %}<a href="#cite">Cite</a>{% endif %}
+      {% if data_url %}<a href="{{ data_url }}">Data &amp; logs</a>{% endif %}
+      {% if repo %}<a href="https://github.com/{{ repo }}">GitHub</a>{% endif %}
+    </nav>
+  </div>
+</header>
+<main>
+  <div class="wrap">
+    {{ body | safe }}
+    {% if cite %}
+    <section class="cite" id="cite">
+      <h2>Citation</h2>
+      <pre><code id="bibtex">{{ cite.bibtex }}</code></pre>
+      <button type="button" data-copy="bibtex">Copy BibTeX</button>
+    </section>
+    {% endif %}
+  </div>
+</main>
+<footer>
+  <div class="wrap">
+    {% if board %}Results updated {{ board.updated }}. {% endif %}{% if repo %}Source at <a href="https://github.com/{{ repo }}">github.com/{{ repo }}</a>.{% endif %}
+  </div>
+</footer>
+<script>
+document.querySelectorAll("[data-board]").forEach((board) => {
+  const table = board.querySelector("table");
+  const body = table.tBodies[0];
+  const heads = [...table.tHead.rows[0].cells].filter((th) => th.dataset.sort !== undefined);
+
+  const valueOf = (row, key) => {
+    if (key === "rank") return +row.dataset.order;
+    if (key === "name") return row.dataset.name.toLowerCase();
+    if (key.startsWith("info-")) {
+      const text = row.querySelectorAll("td.info")[+key.slice(5)].textContent;
+      return text === "" ? null : text;
+    }
+    const v = row.querySelectorAll("td[data-value]")[+key].dataset.value;
+    return v === "" ? null : +v;
+  };
+
+  heads.forEach((th) => {
+    th.querySelector("button").addEventListener("click", () => {
+      const key = th.dataset.sort;
+      const current = th.getAttribute("aria-sort");
+      // Score columns open with their best values first.
+      const natural = th.dataset.better === "higher" ? "descending" : "ascending";
+      const dir = current ? (current === "ascending" ? "descending" : "ascending") : natural;
+      heads.forEach((h) => h.removeAttribute("aria-sort"));
+      th.setAttribute("aria-sort", dir);
+      const sign = dir === "ascending" ? 1 : -1;
+      const rows = [...body.rows].sort((a, b) => {
+        const x = valueOf(a, key), y = valueOf(b, key);
+        if (x === null || y === null) return (x === null) - (y === null);
+        const order = typeof x === "string" ? x.localeCompare(y) : x - y;
+        return order * sign || a.dataset.name.localeCompare(b.dataset.name);
+      });
+      body.append(...rows);
+    });
+  });
+
+  board.querySelectorAll("[data-kind-toggle]").forEach((box) => {
+    box.addEventListener("change", () => {
+      body.querySelectorAll(`tr[data-kind="${box.dataset.kindToggle}"]`).forEach((row) => row.classList.toggle("hidden", !box.checked));
+    });
+  });
+});
+
+document.querySelectorAll("[data-copy]").forEach((button) => {
+  button.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(button.dataset.copy).textContent);
+      button.textContent = "Copied";
+    } catch {
+      button.textContent = "Select the text above to copy";
+    }
+  });
+});
+</script>
+</body>
+</html>

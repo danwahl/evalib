@@ -3,6 +3,7 @@
 import math
 import re
 import shutil
+import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -190,6 +191,17 @@ def _tick_label(value: float, spec: str) -> str:
     return f"{value:.12g}"
 
 
+# Title words skipped when choosing the BibTeX key's title word.
+STOPWORDS = {"a", "an", "the"}
+
+
+def _ascii_word(text: str) -> str:
+    """Lowercase ASCII letters and digits only, with accents folded, as
+    classic BibTeX expects of a key."""
+    folded = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]", "", folded.lower())
+
+
 def _citation(path: Path) -> dict[str, str]:
     """Render CITATION.cff as BibTeX, preferring its preferred-citation."""
     cff = yaml.safe_load(path.read_text())
@@ -204,12 +216,15 @@ def _citation(path: Path) -> dict[str, str]:
     kind = {"article": "article", "report": "techreport"}.get(
         ref.get("type", ""), "misc"
     )
-    key = (
-        re.sub(
-            r"\W", "", (ref.get("authors") or [{}])[0].get("family-names", "cite")
-        ).lower()
-        + year
+    # Surname, year and first title word, e.g. wahl2025specieval.
+    first = (ref.get("authors") or [{}])[0]
+    surname = (
+        first.get("family-names") or (str(first.get("name") or "").split() or [""])[0]
     )
+    words = [
+        w for w in str(ref.get("title") or "").split() if w.lower() not in STOPWORDS
+    ]
+    key = _ascii_word(f"{surname}{year}{(words or [''])[0]}") or "cite"
     fields = {
         "title": ref.get("title"),
         "author": authors,

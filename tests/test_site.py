@@ -32,7 +32,7 @@ def test_build(repo):
     assert 'href="#leaderboard"' in html
     assert "# not a title" in html
     assert "shields.io" not in html
-    assert "@misc{wahl2026" in html and "author = {Wahl, Dan}" in html
+    assert "@misc{wahl2026my," in html and "author = {Wahl, Dan}" in html
     assert "title = {{My Eval \\&amp; Co}}" in html
     assert "url = {https://github.com/x/my_repo}" in html
     assert 'data-kind="baseline"' in html
@@ -89,3 +89,16 @@ def test_ticks_and_labels():
         "1%",
         "1.25%",
     ]
+
+
+def test_bibtex_key(tmp_path):
+    from evalib.site import _citation
+
+    cff = tmp_path / "CITATION.cff"
+    cff.write_text(
+        "title: The Évaluation\nauthors:\n  - family-names: Graça\n"
+        "date-released: 2025-01-02\n"
+    )
+    assert _citation(cff)["bibtex"].startswith("@misc{graca2025evaluation,")
+    cff.write_text("title:\nauthors:\n  - name: OpenAI Team\nyear: 2024\n")
+    assert _citation(cff)["bibtex"].startswith("@misc{openai2024,")

@@ -42,6 +42,17 @@ def test_build(repo):
     assert (out / "images" / "c.png").read_bytes() == b"png"
 
 
+def test_headings_get_github_ids(repo):
+    (repo / "README.md").write_text(
+        "## Usage\n\n## Land(/Sea) `4Ns`\n\n## Usage\n\n## Leaderboard\n"
+    )
+    html = (build() / "index.html").read_text()
+    assert '<h2 id="usage">Usage</h2>' in html
+    assert '<h2 id="landsea-4ns">' in html
+    assert '<h2 id="usage-1">Usage</h2>' in html
+    assert '<h2 id="leaderboard-1">Leaderboard</h2>' in html
+
+
 def test_build_without_marker_or_title(repo):
     (repo / "README.md").write_text("Intro only.\n")
     html = (build() / "index.html").read_text()

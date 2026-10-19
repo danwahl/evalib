@@ -30,6 +30,38 @@ md.add_render_rule(
 )
 md.add_render_rule("table_close", lambda *_: "</table></div>\n")
 
+# Ids the page templates use, which headings must not repeat.
+TEMPLATE_IDS = {"leaderboard", "cite", "bibtex"}
+
+
+def _slug(text: str) -> str:
+    """GitHub's heading anchor: lowercase, punctuation dropped, spaces hyphenated."""
+    return re.sub(r"[^\w\- ]", "", text.strip().lower()).replace(" ", "-")
+
+
+def _heading_ids(state: Any) -> None:
+    """Give headings GitHub's ids, so README links like (#usage) work here too.
+    Repeats get -1, -2, ... as on GitHub."""
+    used = set(TEMPLATE_IDS)
+    for i, token in enumerate(state.tokens):
+        if token.type != "heading_open":
+            continue
+        inline = state.tokens[i + 1].children or []
+        base = _slug(
+            "".join(t.content for t in inline if t.type in ("text", "code_inline"))
+        )
+        if not base:
+            continue
+        slug, n = base, 0
+        while slug in used:
+            n += 1
+            slug = f"{base}-{n}"
+        used.add(slug)
+        token.attrSet("id", slug)
+
+
+md.core.ruler.push("heading_ids", _heading_ids)
+
 
 def build(
     out: str | Path = "_site",
